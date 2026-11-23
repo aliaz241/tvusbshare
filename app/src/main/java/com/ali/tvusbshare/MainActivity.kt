@@ -33,7 +33,8 @@ class MainActivity : AppCompatActivity() {
             val process = Runtime.getRuntime().exec("su")
             val os = DataOutputStream(process.outputStream)
             for (cmd in commands) {
-                os.writeBytes(cmd + "\n")
+                os.write(cmd.toByteArray(Charsets.UTF_8))
+                os.writeBytes("\n")
             }
             os.writeBytes("exit\n")
             os.flush()
