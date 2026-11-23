@@ -16,7 +16,7 @@
         android:id="@+id/partitionInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="/dev/block/mmcblk1p1"
+        android:hint="/dev/block/mmcblk0p1"
         android:singleLine="true" />
 
     <LinearLayout
