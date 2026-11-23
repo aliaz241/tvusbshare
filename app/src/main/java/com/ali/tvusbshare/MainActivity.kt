@@ -71,35 +71,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runEnable() {
-        val partition = partitionInput.text.toString().trim()
+        var partition = partitionInput.text.toString().trim()
         if (partition.isEmpty()) {
-            statusText.text = "اول مسیر پارتیشن رو وارد کن (با دکمه «بررسی» پیداش کن)، مثلا:\n/dev/block/mmcblk1p1"
+            statusText.text = "اول مسیر پارتیشن رو وارد کن (با دکمه «بررسی» پیداش کن)، مثلا:\n/dev/block/mmcblk0p1"
             return
         }
+        if (!partition.startsWith("/")) partition = "/$partition"
 
+        // Works on the ROM's existing gadget at /config/usb_gadget/g1 (config b.1):
+        // unbind, swap the MTP/ADB function links for mass_storage (read-only LUN), rebind.
+        // No unmount on purpose: unmounting the in-use card wedges apps on this ROM,
+        // and the read-only LUN keeps the TV from writing anyway.
         val cmds = listOf(
-            // Unmount so Android releases exclusive access to the filesystem first
-            "umount /storage/sdcard1 2>/dev/null",
-            "umount \$(readlink -f /storage/*-* 2>/dev/null) 2>/dev/null",
-
-            // Try configfs (modern) first, fall back to legacy android_usb
-            "if [ -d /sys/kernel/config/usb_gadget ]; then " +
-                "mkdir -p /sys/kernel/config/usb_gadget/g1 && cd /sys/kernel/config/usb_gadget/g1 && " +
-                "echo 0x18d1 > idVendor; echo 0x4ee1 > idProduct; " +
-                "mkdir -p functions/mass_storage.0 && " +
-                "echo '$partition' > functions/mass_storage.0/lun.0/file && " +
-                "mkdir -p configs/c.1 && " +
-                "ln -s functions/mass_storage.0 configs/c.1/ 2>/dev/null; " +
-                "UDC_NAME=\$(ls /sys/class/udc | head -n1) && echo \$UDC_NAME > UDC && " +
-                "echo 'نتیجه: UMS با روش configfs فعال شد'; " +
-            "elif [ -f /sys/class/android_usb/android0/functions ]; then " +
-                "echo mass_storage > /sys/class/android_usb/android0/functions && " +
-                "echo '$partition' > /sys/class/android_usb/android0/f_mass_storage/lun/file && " +
-                "echo 1 > /sys/class/android_usb/android0/enable && " +
-                "echo 'نتیجه: UMS با روش legacy فعال شد'; " +
-            "else " +
-                "echo 'نتیجه: این کرنل هیچ‌کدوم از دو روش رو ساپورت نمی‌کنه'; " +
-            "fi"
+            "G=/config/usb_gadget/g1; C=\$G/configs/b.1; F=\$G/functions/mass_storage.0; P='$partition'",
+            "if [ ! -d \$G ]; then echo 'خطا: گجت USB پیدا نشد'; exit 1; fi",
+            "if [ ! -b \$P ]; then echo 'خطا: این پارتیشن وجود نداره:' \$P; exit 1; fi",
+            "echo '' > \$G/UDC",
+            "for l in \$C/*; do case \$(readlink \$l) in *ffs.mtp*|*ffs.adb*) rm -f \$l;; esac; done",
+            "mkdir -p \$F",
+            "echo '' > \$F/lun.0/file 2>/dev/null",
+            "echo 1 > \$F/lun.0/ro",
+            "echo \$P > \$F/lun.0/file",
+            "ln -s \$F \$C/mass_storage.0",
+            "echo \$(ls /sys/class/udc | head -n 1) > \$G/UDC",
+            "echo 'نتیجه: UMS فعال شد'"
         )
         statusText.text = "در حال فعال‌سازی...\n" + runAsRoot(cmds) +
             "\nحالا سیم USB رو به تلویزیون وصل کن."
@@ -107,15 +102,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun runDisable() {
         val cmds = listOf(
-            "if [ -f /sys/class/android_usb/android0/enable ]; then echo 0 > /sys/class/android_usb/android0/enable; fi",
-            "if [ -d /sys/kernel/config/usb_gadget/g1 ]; then " +
-                "cd /sys/kernel/config/usb_gadget/g1 && " +
-                "echo '' > UDC 2>/dev/null; " +
-                "rm -f configs/c.1/mass_storage.0 2>/dev/null; " +
-                "rmdir configs/c.1 2>/dev/null; " +
-                "rmdir functions/mass_storage.0 2>/dev/null; " +
-                "cd .. && rmdir g1 2>/dev/null; " +
-            "fi",
+            "G=/config/usb_gadget/g1; C=\$G/configs/b.1; F=\$G/functions/mass_storage.0",
+            "if [ -d \$G ]; then echo '' > \$G/UDC; fi",
+            "rm -f \$C/mass_storage.0 2>/dev/null",
+            "echo '' > \$F/lun.0/file 2>/dev/null",
+            "ln -s \$G/functions/ffs.mtp \$C/ffs.mtp 2>/dev/null",
+            "ln -s \$G/functions/ffs.adb \$C/ffs.adb 2>/dev/null",
+            "echo \$(ls /sys/class/udc | head -n 1) > \$G/UDC",
             "echo 'UMS غیرفعال شد — گوشی به حالت عادی (MTP) برگشت'"
         )
         statusText.text = runAsRoot(cmds)
