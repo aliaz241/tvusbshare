@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="مسیر پارتیشن کارت SD خارجی (با دکمه بررسی پیدا کن):"
+        android:textSize="14sp"
+        android:paddingBottom="4dp" />
+
+    <EditText
+        android:id="@+id/partitionInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="/dev/block/mmcblk1p1"
+        android:singleLine="true" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <Button
+            android:id="@+id/checkButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="بررسی" />
+
+        <Button
+            android:id="@+id/enableButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="فعال‌سازی" />
+
+        <Button
+            android:id="@+id/disableButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="غیرفعال‌سازی" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1a1a1a">
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="#00ff00"
+            android:text="خروجی اینجا نشون داده می‌شه..." />
+    </ScrollView>
+
+</LinearLayout>
